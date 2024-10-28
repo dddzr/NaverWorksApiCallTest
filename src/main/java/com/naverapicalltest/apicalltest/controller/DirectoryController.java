@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -136,7 +137,33 @@ public class DirectoryController {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         return response.body();
     }
-    
+
+    @PatchMapping("/patchUser/{userId}") //ID는 추가 시 자동으로 부여됨.
+    public String patchUser(@PathVariable String userId, @RequestBody User user, HttpSession session) throws Exception{
+        System.out.println("-----patchUser strated.-----" );	
+
+        String url = "https://www.worksapis.com/v1.0/users/" + userId;
+        HttpClient httpClient = HttpClient.newHttpClient();
+        
+        ObjectMapper objectMapper = new ObjectMapper();
+        String jsonUser = objectMapper.writeValueAsString(user);
+
+        String accessToken = authController.getAccessToken(session);
+        if (accessToken == null) {
+            accessToken = authController.jwtAuthorize(session);
+        }
+
+        HttpRequest request = HttpRequest.newBuilder()
+        .method("PATCH", HttpRequest.BodyPublishers.ofString(jsonUser))
+        .header("Authorization", "Bearer " + accessToken)
+        .header("Content-Type", "application/json")
+        .uri(URI.create(url))
+        .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        return response.body();
+    }
+
     @DeleteMapping("/deleteUser/{userId}") //ID는 추가 시 자동으로 부여됨.
     public String deleteUser(@PathVariable String userId, HttpSession session) throws Exception{
         System.out.println("-----deleteUser strated.-----" );	
