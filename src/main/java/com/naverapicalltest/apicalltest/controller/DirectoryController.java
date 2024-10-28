@@ -138,10 +138,32 @@ public class DirectoryController {
     }
     
     @DeleteMapping("/deleteUser/{userId}") //ID는 추가 시 자동으로 부여됨.
-    public String userId(@PathVariable String userId, HttpSession session) throws Exception{
-        System.out.println("-----userId strated.-----" );	
+    public String deleteUser(@PathVariable String userId, HttpSession session) throws Exception{
+        System.out.println("-----deleteUser strated.-----" );	
 
         String url = "https://www.worksapis.com/v1.0/users/" + userId;
+        HttpClient httpClient = HttpClient.newHttpClient();
+
+        String accessToken = authController.getAccessToken(session);
+        if (accessToken == null) {
+            accessToken = authController.jwtAuthorize(session);
+        }
+
+        HttpRequest request = HttpRequest.newBuilder()
+        .DELETE()
+        .header("Authorization", "Bearer " + accessToken)
+        .uri(URI.create(url))
+        .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        return response.body();
+    }
+
+    @DeleteMapping("/forceDeleteUser/{userId}") //ID는 추가 시 자동으로 부여됨.
+    public String forceDeleteUser(@PathVariable String userId, HttpSession session) throws Exception{
+        System.out.println("-----forceDeleteUser strated.-----" );	
+
+        String url = "https://www.worksapis.com/v1.0/users/" + userId + "/forcedelete";
         HttpClient httpClient = HttpClient.newHttpClient();
 
         String accessToken = authController.getAccessToken(session);
@@ -232,7 +254,7 @@ public class DirectoryController {
         return response.body();
     }
 
-    /* 직책 */
+    /* 직급 */
 
     @GetMapping("/getLevelList")
     public String getLevelList(HttpSession session) throws Exception{
@@ -303,5 +325,30 @@ public class DirectoryController {
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         return response.body();
+    }
+
+    /* 직급 */
+
+    @GetMapping("/getPositionList")
+    public String getPositionList(HttpSession session) throws Exception{
+        System.out.println("-----getPositionList strated.-----" );	
+
+        // Access Token 조회
+        String accessToken = authController.getAccessToken(session);
+        if (accessToken == null) {
+            accessToken = authController.jwtAuthorize(session);
+        }
+        
+        String url = "https://www.worksapis.com/v1.0/directory/positions";
+
+        HttpClient httpClient = HttpClient.newHttpClient();        
+        HttpRequest request = HttpRequest.newBuilder()
+                .GET()
+                .uri(URI.create(url))
+                .header("Authorization", "Bearer " + accessToken)
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        return response.body();        
     }
 }

@@ -80,16 +80,16 @@ public class User {
         private Boolean primary; // 대표 도메인 여부
         private String userExternalKey;
         private String email;
-        private String levelId; // 직급
+        private String levelId; // 직급 (사업장, 팀장, 구성원 ...)
         private List<OrgUnit> orgUnits; // 조직 목록
 
         @Data
-        public static class OrgUnit {
+        public static class OrgUnit {// 사용자 정보 조회 할 때 실제 조직, 직책과 매칭되어 보여지지 x, ID 그대로 보여짐. & 없는 ID 입력해도 등록됨.
             @NotNull
-            private String orgUnitId;
+            private String orgUnitId; //조직 (팀)
             @NotNull
             private boolean primary;
-            private String positionId;
+            private String positionId; //직책 (사장, 이사, 부장, 과장 ...)
             private boolean isManager = false;
             private boolean visible = true;
             private boolean useTeamFeature = true;
