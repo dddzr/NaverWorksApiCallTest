@@ -45,7 +45,7 @@ public class AuthController {
             refreshAccessToken(refreshToken, session);
         }
 
-        String authUrl = String.format(
+        String url = String.format(
             "https://auth.worksmobile.com/oauth2/v2.0/authorize?client_id=%s&redirect_uri=%s&scope=%s&response_type=%s&state=%s",
             URLEncoder.encode(authConfig.getClientId(), StandardCharsets.UTF_8),
             URLEncoder.encode(authConfig.getRedirectUri(), StandardCharsets.UTF_8),
@@ -53,13 +53,13 @@ public class AuthController {
             URLEncoder.encode(response_type, StandardCharsets.UTF_8),
             URLEncoder.encode(state, StandardCharsets.UTF_8)            
         );
-        System.out.println(authUrl);
+        System.out.println(url);
 
         // 전송 준비
         HttpClient httpClient = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
-                .uri(URI.create(authUrl))
+                .uri(URI.create(url))
                 .build();
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -93,7 +93,7 @@ public class AuthController {
 
     private String getToken(HttpSession session, String code, String tokenType) {
         System.out.println("----- getToken strated. -----" );		
-        String tokenUrl = "https://auth.worksmobile.com/oauth2/v2.0/token";
+        String url = "https://auth.worksmobile.com/oauth2/v2.0/token";
         
         HttpClient httpClient = HttpClient.newHttpClient();
         
@@ -121,7 +121,7 @@ public class AuthController {
         HttpRequest request = HttpRequest.newBuilder()
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .header("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
-                .uri(URI.create(tokenUrl))
+                .uri(URI.create(url))
                 .build();
 
         try {
@@ -147,7 +147,7 @@ public class AuthController {
 
     @GetMapping("/revokeToken/{tokenName}")
     String revokeToken(HttpSession session, @PathVariable String tokenName) {//tokenName: refresh/access
-        String tokenUrl = "https://auth.worksmobile.com/oauth2/v2.0/revoke";
+        String url = "https://auth.worksmobile.com/oauth2/v2.0/revoke";
         
         HttpClient httpClient = HttpClient.newHttpClient();
 
@@ -172,7 +172,7 @@ public class AuthController {
         HttpRequest request = HttpRequest.newBuilder()
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .header("Content-Type", "application/x-www-form-urlencoded")
-                .uri(URI.create(tokenUrl))
+                .uri(URI.create(url))
                 .build();
 
         try {
@@ -218,7 +218,7 @@ public class AuthController {
 
     @GetMapping("/refreshAccessToken")
     String refreshAccessToken(String refreshToken, HttpSession session ) {
-        String tokenUrl = "https://auth.naverworks.com/oauth2/v2.0/token";
+        String url = "https://auth.naverworks.com/oauth2/v2.0/token";
         
         HttpClient httpClient = HttpClient.newHttpClient();
         
@@ -233,7 +233,7 @@ public class AuthController {
         HttpRequest request = HttpRequest.newBuilder()
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .header("Content-Type", "application/x-www-form-urlencoded")
-                .uri(URI.create(tokenUrl))
+                .uri(URI.create(url))
                 .build();
 
         try {

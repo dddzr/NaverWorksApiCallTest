@@ -5,9 +5,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class AuthConfig {
-    // @Value("${auth.private_key}")
-    // private String private_key;
-
     @Value("${auth.client_id}")
     private String clientId;
 
@@ -22,11 +19,6 @@ public class AuthConfig {
 
     @Value("${auth.server_account}")
     private String serverAccount;
-
-    // Getter
-    // public String getPrivateKey() {
-    //     return private_key;
-    // }
 
     public String getClientId() {
         return clientId;
