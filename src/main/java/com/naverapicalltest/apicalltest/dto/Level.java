@@ -4,12 +4,16 @@ import lombok.Data;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Size;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.NotNull;
 
 import java.util.List;
 
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Level {
     @NotNull
     private Integer domainId;

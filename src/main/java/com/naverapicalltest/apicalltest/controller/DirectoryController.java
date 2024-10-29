@@ -5,6 +5,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -210,7 +213,12 @@ public class DirectoryController {
         return response.body();
     }
 
-    /* 조직 */
+    /* 
+     * 조직
+     * 조직 추가/수정/부분 수정/이동 API는 도메인당 반드시 단일 스레드로 1초에 한 번, 순서대로 호출한다. -> 본인 코드 따라 처리할거 많으면 시간 늘림.
+     */
+    private final ExecutorService orgUnitExecutor = Executors.newSingleThreadExecutor();
+    private long lastOrgUnitExecutionTime = System.currentTimeMillis();
 
     @GetMapping("/getOrgunitList")
     public String getOrgunitList(HttpSession session) throws Exception{
@@ -235,35 +243,99 @@ public class DirectoryController {
         return response.body();        
     }
 
-    @PostMapping("/addOrgunits")
-    public String addOrgunits(@RequestBody OrgUnit orgunit, HttpSession session) throws Exception{
-        System.out.println("-----addOrgunits strated.-----" );	
+    @PostMapping("/addOrgunit")
+    public ResponseEntity<String> addOrgunit(@RequestBody OrgUnit orgunit, HttpSession session) throws Exception{
+        System.out.println("-----addOrgunit strated.-----" );	
 
-        String url = "https://www.worksapis.com/v1.0/orgunits";
-        HttpClient httpClient = HttpClient.newHttpClient();
+        // ExecutorService를 통해 단일 스레드로 처리
+        orgUnitExecutor.submit(() -> {
+            try {
+                // 1초 대기
+                long currentTime = System.currentTimeMillis();
+                long waitTime = 1000 - (currentTime - lastOrgUnitExecutionTime);
+                if (waitTime > 0) {
+                    TimeUnit.MILLISECONDS.sleep(waitTime);
+                }
+                lastOrgUnitExecutionTime = System.currentTimeMillis();
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        String jsonUser = objectMapper.writeValueAsString(orgunit);
-        
-        String accessToken = authController.getAccessToken(session);
-        if (accessToken == null) {
-            accessToken = authController.jwtAuthorize(session);
-        }
+                // API 요청 코드
+                String url = "https://www.worksapis.com/v1.0/orgunits";
+                HttpClient httpClient = HttpClient.newHttpClient();
 
-        HttpRequest request = HttpRequest.newBuilder()
-        .POST(HttpRequest.BodyPublishers.ofString(jsonUser))
-        .header("Authorization", "Bearer " + accessToken)
-        .header("Content-Type", "application/json")
-        .uri(URI.create(url))
-        .build();
+                ObjectMapper objectMapper = new ObjectMapper();
+                String jsonUser = objectMapper.writeValueAsString(orgunit);
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        return response.body();
+                String accessToken = authController.getAccessToken(session);
+                if (accessToken == null) {
+                    accessToken = authController.jwtAuthorize(session);
+                }
+
+                HttpRequest request = HttpRequest.newBuilder()
+                        .POST(HttpRequest.BodyPublishers.ofString(jsonUser))
+                        .header("Authorization", "Bearer " + accessToken)
+                        .header("Content-Type", "application/json")
+                        .uri(URI.create(url))
+                        .build();
+
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                System.out.println("Response: " + response.body());
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                // 예외 처리 로직 추가 필요
+            }
+        });
+
+        return ResponseEntity.accepted().body("Request is being processed."); //스레드가 완료되기를 기다리지 않고 요청이 진행중이라는 메세지 반환.
     }
 
-    @DeleteMapping("/deleteOrgunits/{orgUnitId}")
-    public String deleteOrgunits(@PathVariable String orgUnitId, HttpSession session) throws Exception{
-        System.out.println("-----deleteOrgunits strated.-----" );	
+    
+    @PatchMapping("/patchOrgunit/{orgUnitId}")
+    public ResponseEntity<String> patchOrgunit(@PathVariable String orgUnitId, @RequestBody OrgUnit orgUnit, HttpSession session) throws Exception{
+        System.out.println("-----patchOrgunit strated.-----" );	
+
+        orgUnitExecutor.submit(() -> {
+            try {
+                long currentTime = System.currentTimeMillis();
+                long waitTime = 1000 - (currentTime - lastOrgUnitExecutionTime);
+                if (waitTime > 0) {
+                    TimeUnit.MILLISECONDS.sleep(waitTime);
+                }
+                lastOrgUnitExecutionTime = System.currentTimeMillis();
+
+                
+                String url = "https://www.worksapis.com/v1.0/orgunits/" + orgUnitId;
+                HttpClient httpClient = HttpClient.newHttpClient();
+                
+                ObjectMapper objectMapper = new ObjectMapper();
+                String jsonOrgUnit = objectMapper.writeValueAsString(orgUnit);
+        
+                String accessToken = authController.getAccessToken(session);
+                if (accessToken == null) {
+                    accessToken = authController.jwtAuthorize(session);
+                }
+        
+                HttpRequest request = HttpRequest.newBuilder()
+                .method("PATCH", HttpRequest.BodyPublishers.ofString(jsonOrgUnit))
+                .header("Authorization", "Bearer " + accessToken)
+                .header("Content-Type", "application/json")
+                .uri(URI.create(url))
+                .build();
+        
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                System.out.println("Response: " + response.body());
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+        
+        return ResponseEntity.accepted().body("Request is being processed."); 
+    }
+
+    @DeleteMapping("/deleteOrgunit/{orgUnitId}")
+    public String deleteOrgunit(@PathVariable String orgUnitId, HttpSession session) throws Exception{
+        System.out.println("-----deleteOrgunit strated.-----" );	
 
         String url = "https://www.worksapis.com/v1.0/orgunits/" + orgUnitId;
         HttpClient httpClient = HttpClient.newHttpClient();
@@ -283,8 +355,7 @@ public class DirectoryController {
         return response.body();
     }
 
-    /* 직급 */
-
+    /* 직급 (팀원, 팀장...)*/
     @GetMapping("/getLevelList")
     public String getLevelList(HttpSession session) throws Exception{
         System.out.println("-----getLevelList strated.-----" );	
@@ -356,8 +427,7 @@ public class DirectoryController {
         return response.body();
     }
 
-    /* 직급 */
-
+    /* 직책 (사원, 대리...) */
     @GetMapping("/getPositionList")
     public String getPositionList(HttpSession session) throws Exception{
         System.out.println("-----getPositionList strated.-----" );	

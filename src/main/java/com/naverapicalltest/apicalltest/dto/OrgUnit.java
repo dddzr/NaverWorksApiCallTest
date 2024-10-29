@@ -4,12 +4,16 @@ import lombok.Data;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Size;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.NotNull;
 
 import java.util.List;
 
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class OrgUnit {
     @NotNull
     private Integer domainId;
@@ -23,7 +27,7 @@ public class OrgUnit {
     private boolean visible;
     private String parentOrgUnitId;
     private String parentExternalKey; //readonly.
-    private Integer displayOrder;
+    private Integer displayOrder; // 수정시에는 해당 값은 무시된다.
     private Integer displayLevel; //readonly.
     private List<String> aliasEmails;
     private boolean canReceiveExternalMail = false;
