@@ -152,10 +152,13 @@ public class AuthController {
         HttpClient httpClient = HttpClient.newHttpClient();
 
         String token = "";
+        String tokenTypeHint = "";
         if(tokenName.equals("refresh")){
             token = getRefreshToken(session);
+            tokenTypeHint = "refresh_token";
         } else if(tokenName.equals("access")){
             token = getAccessToken(session);
+            tokenTypeHint = "access_token";
         }else{
             return "Error: PathVariable is invaild. tokenName(refresh/access) is required.";
         }
@@ -163,10 +166,11 @@ public class AuthController {
             return "toekn is null.";
         }
         
-        String requestBody = String.format("client_id=%s&client_secret=%s&token=%s",
+        String requestBody = String.format("client_id=%s&client_secret=%s&token=%s&token_type_hint=%s",
             authConfig.getClientId(),
             authConfig.getClientSecret(),
-            token
+            token,
+            tokenTypeHint
         );
 
         HttpRequest request = HttpRequest.newBuilder()
@@ -216,6 +220,12 @@ public class AuthController {
         return (String) session.getAttribute("refreshToken");
     }
 
+    /**
+     * refresh Token 사용 안 하는 중.
+     * @param refreshToken
+     * @param session
+     * @return
+     */
     @GetMapping("/refreshAccessToken")
     String refreshAccessToken(String refreshToken, HttpSession session ) {
         String url = "https://auth.naverworks.com/oauth2/v2.0/token";

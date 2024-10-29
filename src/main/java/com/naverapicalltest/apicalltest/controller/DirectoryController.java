@@ -73,7 +73,8 @@ public class DirectoryController {
             String userInfo = fetchUserInfo(accessToken, userId);
             return ResponseEntity.ok(userInfo);
             // 아래는 OAuth(구성원 계정으로 인증)테스트를 위한 코드.
-            // 원래 로그인 페이지를 보여주기 위해 쓰는 api같다. 그래서 바로 accessToken을 받아 올 수는 없다.
+            // 원래 로그인 페이지(HTML)를 보여주기 위해 쓰는 api같다. 그래서 바로 accessToken을 받아 올 수는 없다. 
+            // (response가 accsse token 이 아닌 로그인 html)
             // return ResponseEntity.status(HttpStatus.FOUND).location(URI.create("/authorize")).build();
         } else {
             String userInfo = fetchUserInfo(accessToken, userId);
@@ -82,13 +83,13 @@ public class DirectoryController {
     }
 
     private String fetchUserInfo(String accessToken, String userId) {
-        String url = "https://www.worksapis.com/v1.0/users/"+ userId; //URLEncoder.encode(userId, StandardCharsets.UTF_8); //+ path Parameters (메일ID/리소스ID/외부키)
+        String url = "https://www.worksapis.com/v1.0/users/"+ userId; // path Parameters (메일ID/리소스ID/외부키)
 
         HttpClient httpClient = HttpClient.newHttpClient();        
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
                 .uri(URI.create(url))
-                .header("Authorization", "Bearer " + accessToken) //header Parameters
+                .header("Authorization", "Bearer " + accessToken) // header Parameters
                 .build();
 
         try {
@@ -96,11 +97,12 @@ public class DirectoryController {
             // JSON 파싱
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode data = objectMapper.readTree(response.body());
+            // User user = objectMapper.readValue(response.body(), User.class); => DTO로 매핑하여 사용 할 때.
 
             // 응답 코드 확인
             int statusCode = response.statusCode();
 
-            // 상태에 따라 처리
+            // 상태에 따라 처리 -> 수정 필요
             if (statusCode == 200) {
                 return data.toString();
             } else {

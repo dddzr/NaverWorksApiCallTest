@@ -16,42 +16,58 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class User {
     @NotNull
-    Integer domainId;
+    private Integer domainId;
+    private String userExternalKey;
 
-    String userExternalKey;
+    /*  
+        readOnly 
+        setter 일일이 만들기 귀찮아서 일단 Data 씀. 세터 안 만들게 수정 필요. (다른 dto도)
+    */  
+    private String userId; // 자동 부여.
+    private boolean isAdministrator;
+    private boolean isPending;
+    private boolean isSuspended;
+    private boolean isDeleted;
+    private boolean isAwaiting;
+    private LeaveOfAbsence leaveOfAbsence;
+    private String suspendedReason;
 
     @NotNull
-    String email;
-
+    private String email;
     @Valid
     @NotNull
-    private UserName userName; // Object;
-
-    List<Useri18nName> i18nNames;
-    String nickName;
-    String privateEmail; //SSO 사용 안 하고, passwordConfig.passwordCreationType = "MEMBER" 이면 필수
-    List<String> aliasEmails;
-    String employmentTypeId;
-    String userTypeId;
-    boolean searchable;
-    private PasswordConfig passwordConfig;
-    
+    private UserName userName; // Object
+    private List<Useri18nName> i18nNames;
+    private String nickName;
+    private String privateEmail; //SSO 사용 안 하고, passwordConfig.passwordCreationType = "MEMBER" 이면 필수
+    private List<String> aliasEmails;
+    private String employmentTypeId;
+    private String userTypeId;
+    private boolean searchable;
+    private PasswordConfig passwordConfig;    
     @Valid
     private List<UserOrganization> organizations;
-    String telephone;
-    String cellPhone;
-    String location;
-    String task;
-    // Object messenger;
-    String birthdayCalendarType;
-    String birthday;
-    String locale;
-    String hiredDate;
-    String timeZone;
-    // List<UserCustomField> customFields;
-    // List<UserRelation> relations;
-    String activationDate;
-    String employeeNumber;
+    private String telephone;
+    private String cellPhone;
+    private String location;
+    private String task;
+    private Messenger messenger;
+    private String birthdayCalendarType;
+    private String birthday;
+    private String locale;
+    private String hiredDate;
+    private String timeZone;
+    private List<UserCustomField> customFields;
+    private List<UserRelation> relations;
+    private String activationDate;
+    private String employeeNumber;
+
+    @Data
+    public static class LeaveOfAbsence {
+        private String startTime;
+        private String endTime;
+        private boolean isLeaveOfAbsence;
+    }
 
     @Data
     public static class UserName {
@@ -78,6 +94,14 @@ public class User {
     }
 
     @Data
+    public static class Messenger {
+        @Pattern(regexp = "LINE|FACEBOOK|TWITTER|CUSTOM", message = "Allowed values in (LINE, FACEBOOK, TWITTER, CUSTOM)")
+        private String protocol;
+        private String customProtocol;
+        private String messengerId;
+    }
+
+    @Data
     public static class UserOrganization { //static 빼면 "Type definition error: [simple type, class com.naverapicalltest.apicalltest.dto.User$UserOrganization]",
         @NotNull(message = "Domain ID is required.")
         private Integer domainId; // 도메인 (=회사)
@@ -98,6 +122,20 @@ public class User {
             private boolean visible = true;
             private boolean useTeamFeature = true;
         }
+    }
+
+    @Data
+    public static class UserCustomField {
+        @NotNull
+        private String customFieldId;
+        private String value;
+        private String link;
+    }
+
+    @Data
+    public static class UserRelation {
+        private String relationUserId;
+        private String relationName;
     }
 
 }

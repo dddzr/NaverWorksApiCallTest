@@ -12,32 +12,43 @@ import java.util.List;
 @Data
 public class OrgUnit {
     @NotNull
-    Integer domainId;
-
-    String orgUnitId; //readonly
-    String orgUnitExternalKey;
-
+    private Integer domainId;
+    private String orgUnitId; //readonly. 자동 부여
+    private String orgUnitExternalKey;
     @NotNull
-    String orgUnitName;
-    // List<i18nNames> i18nNames;
-    String email;
-    String description;
-    boolean visible;
-    String parentOrgUnitId;
-    String parentExternalKey; //readonly.
-    Integer displayOrder;
-    Integer displayLevel; //readonly.. setter 일일이 만들기 귀찮아서 일단 냅둠
-    List<String> aliasEmails;
-    boolean canReceiveExternalMail = false;
-    boolean useMessage =false;
-    boolean useNote = false;
-    boolean useCalendar = false;
-    boolean useTask = false;
-    boolean useFolder = false;
-    boolean useServiceNotification = false;
-    // List<OrgUnitAllowedMember> membersAllowedToUseOrgUnitEmailAsRecipient;
-    // List<OrgUnitAllowedMember> membersAllowedToUseOrgUnitEmailAsSender;
+    private String orgUnitName;
+    private List<OrgUniti18nName> i18nNames;
+    private String email;
+    private String description;
+    private boolean visible;
+    private String parentOrgUnitId;
+    private String parentExternalKey; //readonly.
+    private Integer displayOrder;
+    private Integer displayLevel; //readonly.
+    private List<String> aliasEmails;
+    private boolean canReceiveExternalMail = false;
+    private boolean useMessage =false;
+    private boolean useNote = false;
+    private boolean useCalendar = false;
+    private boolean useTask = false;
+    private boolean useFolder = false;
+    private boolean useServiceNotification = false;
+    private List<OrgUnitAllowedMember> membersAllowedToUseOrgUnitEmailAsRecipient;
+    private List<OrgUnitAllowedMember> membersAllowedToUseOrgUnitEmailAsSender;
 
+    @Data
+    public static class OrgUniti18nName {
+        @Pattern(regexp = "ko_KR|ja_JP|zh_CN|zh_TW|en_US", message = "Allowed values in(ko_KR, ja_JP, zh_CN, zh_TW, en_US)).")
+        private String language;
+        @NotNull
+        private String name;
+    }
+    
+    @Data
+    public static class OrgUnitAllowedMember {
+        @NotNull
+        private String name;
+    }
 
 }
 
