@@ -41,9 +41,11 @@ public class AuthController {
         System.out.println("----- oAuthAuthorize strated. -----" );
         
         String refreshToken = getRefreshToken(session);
-        if( refreshToken != null) {
-            refreshAccessToken(refreshToken, session);
-        }
+        /*access Token null 체크, null이면 아래 로직 실행. 아니면 return 해야하는데 
+            refresh 고려 안 하고 있어서 그냥 리턴하는 걸로 해둠. -> 수정 필요 */
+        // if( refreshToken != null) {
+        //     return refreshAccessToken(refreshToken, session);
+        // }
 
         String url = String.format(
             "https://auth.worksmobile.com/oauth2/v2.0/authorize?client_id=%s&redirect_uri=%s&scope=%s&response_type=%s&state=%s",
@@ -72,6 +74,7 @@ public class AuthController {
        System.out.println("code: " +  authorizationCode);
        
        // Authorization Code를 사용하여 Access Token 요청
+       // authorization Code는 1회 사용 후 만료된다.
        return getToken(session, authorizationCode, "OAuth");
     }
 
@@ -84,9 +87,9 @@ public class AuthController {
        String jwtToken = JwtUtil.generateJwtToken(authConfig.getClientId(), authConfig.getServerAccount(), 3600);
         // iss: Client ID, sub: Service Account, exp: 만료 시간 (Unix time, 초)
        String refreshToken = getRefreshToken(session);
-       if( refreshToken != null) {
-           refreshAccessToken(refreshToken, session);
-       }
+    //    if( refreshToken != null) {
+    //        return refreshAccessToken(refreshToken, session);
+    //    }
 
        return getToken(session, jwtToken, "JWT");
    }
@@ -128,11 +131,17 @@ public class AuthController {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());  
             ObjectMapper objectMapper = new ObjectMapper();
             if(response.statusCode() != 200){
+                //주의. 실패해도 재요청 x -> 도메인 측 정보 (client ID 등) 변경되어 계속 실패해서 무한 루프 걸릴 수 있다.
                 return response.statusCode() + "Error: " + response.body();
             }
 
             String responseBody = response.body();
 
+            /*
+             * 토큰 저장 위치 (현재 session)
+             * session: web 어플리케이션으로 구동 시킬 때만 사용 가능.
+             * static 변수 배열: 도메인 여러개 일 때 (key, value)로 저장, 그냥 java 어플리케이션에서 사용 가능.
+             */
             JsonNode jsonNode = objectMapper.readTree(responseBody);
             String accessToken = jsonNode.get("access_token").asText();
             setAccessToken(session, accessToken);
@@ -145,7 +154,7 @@ public class AuthController {
         }
     }
 
-    @GetMapping("/revokeToken/{tokenName}")
+    @GetMapping("/revokeToken/{tokenName}") // sso문서 보기. 로그아웃 url 설정
     String revokeToken(HttpSession session, @PathVariable String tokenName) {//tokenName: refresh/access
         String url = "https://auth.worksmobile.com/oauth2/v2.0/revoke";
         
@@ -181,7 +190,8 @@ public class AuthController {
 
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());  
-            if(response.statusCode() != 200){
+            if(response.statusCode() != 200){ //503에러로 임시 초기화
+                session.removeAttribute("refreshToken");
                 session.removeAttribute("accessToken");
                 return response.body();
             }else{
@@ -222,6 +232,8 @@ public class AuthController {
 
     /**
      * refresh Token 사용 안 하는 중.
+     * jwt or oAuth 인증 안에 refresh 세션에 있는지 확인 ->
+     * 있으면 refresh로 시도 -> 실패하면 세션 초기화 -> jwt or oAuth 인증 시도 ( access token 및 refresh 토큰 재발급 시도 )
      * @param refreshToken
      * @param session
      * @return
@@ -233,9 +245,9 @@ public class AuthController {
         HttpClient httpClient = HttpClient.newHttpClient();
         
         String requestBody = String.format("grant_type=%s&client_id=%s&client_secret=%s&refresh_token=%s",
-            "authorization_code",
+            "refresh_token",
             authConfig.getClientId(),
-            authConfig.getClientId(),
+            authConfig.getClientSecret(),
             refreshToken
         );
         System.out.println(requestBody);
@@ -260,11 +272,14 @@ public class AuthController {
             JsonNode jsonNode = objectMapper.readTree(responseBody);
             String accessToken = jsonNode.get("access_token").asText();
             setAccessToken(session, accessToken);
-            return response.body();
+            return accessToken;
 
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
-            return "Error: " + e.getMessage();
+            // 실패 시 세션 초기화. 하고 다시 jwt나 oauth 인증으로 넘어가야 함. -> 수정해야 할 것.
+            session.removeAttribute("refreshToken");
+            session.removeAttribute("accessToken");
+            return "Error: " + e.getMessage();//null
         }
     }
 
