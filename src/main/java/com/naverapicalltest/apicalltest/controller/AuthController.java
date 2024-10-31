@@ -9,6 +9,8 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,14 +35,20 @@ public class AuthController {
         this.authConfig = authConfig;
     }
 
+    @GetMapping("/login")
+    public ResponseEntity<Object> login(HttpSession session) throws IOException, InterruptedException {
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create("/authorize")).build();
+   }
+
     /*
+     * 네이버 웍스에서 로그아웃 되어 있을 경우 로그인 화면을 띄움.
      * 로그인 화면에서 인증에 성공하면 지정한 Redirect URL(redirect_uri)로 리다이렉트된다. 
      */
     @GetMapping("/authorize")
     public String oAuthAuthorize(HttpSession session) throws IOException, InterruptedException {
         System.out.println("----- oAuthAuthorize strated. -----" );
         
-        String refreshToken = getRefreshToken(session);
+        // String refreshToken = getRefreshToken(session);
         /*access Token null 체크, null이면 아래 로직 실행. 아니면 return 해야하는데 
             refresh 고려 안 하고 있어서 그냥 리턴하는 걸로 해둠. -> 수정 필요 */
         // if( refreshToken != null) {
@@ -86,7 +94,7 @@ public class AuthController {
        //{header BASE64 URL 인코딩}.{JSON Claim set BASE64 URL 인코딩}.{signature BASE64 URL 인코딩}
        String jwtToken = JwtUtil.generateJwtToken(authConfig.getClientId(), authConfig.getServerAccount(), 3600);
         // iss: Client ID, sub: Service Account, exp: 만료 시간 (Unix time, 초)
-       String refreshToken = getRefreshToken(session);
+    //    String refreshToken = getRefreshToken(session);
     //    if( refreshToken != null) {
     //        return refreshAccessToken(refreshToken, session);
     //    }
