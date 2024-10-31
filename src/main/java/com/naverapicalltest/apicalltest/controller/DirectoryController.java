@@ -5,6 +5,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -21,6 +24,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 //dto
 import com.naverapicalltest.apicalltest.dto.Level;
@@ -66,7 +73,7 @@ public class DirectoryController {
     @GetMapping("/userDetail/{userId}")
     public ResponseEntity<Object> getUserDetail(@PathVariable String userId, HttpSession session) throws Exception{
         System.out.println("-----getUserDetail strated.-----" );	
-        // String userId = "sm.28091@smdomain.by-works.com";
+        // String userId = "sm.28091@testdomain.by-works.com";
 
         // Access Token 조회
         String accessToken = authController.getAccessToken(session); // TokenStore.getAccessToken();
@@ -126,6 +133,99 @@ public class DirectoryController {
 
         ObjectMapper objectMapper = new ObjectMapper();
         String jsonUser = objectMapper.writeValueAsString(user);
+        
+        String accessToken = authController.getAccessToken(session);
+        if (accessToken == null) {
+            accessToken = authController.jwtAuthorize(session);
+        }
+
+        HttpRequest request = HttpRequest.newBuilder()
+        .POST(HttpRequest.BodyPublishers.ofString(jsonUser))
+        .header("Authorization", "Bearer " + accessToken)
+        .header("Content-Type", "application/json")
+        .uri(URI.create(url))
+        .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        return response.body();
+    }
+
+    //프론트에서 데이터 받는게 아니라 실제 환경처럼 고객사 DB에서 정보를 가져올 때를 가정.
+    //포스트맨에서는 post요청만 보내고 실제 데이터는 dto형태로 만들어서 JSONObject로 변환해보기.
+    @PostMapping("/addUser/jsonobjecttest")
+    public String addUserJSONObjectTest(HttpSession session) throws Exception{
+        System.out.println("-----addUserJSONObjectTest strated.-----" );	
+
+        /* json 데이터 예제
+            {
+                "domainId": 11111111,
+                "email": "user123@testdomain.by-works.com",
+                "userName": {
+                    "lastName": "u",
+                    "firstName": "ser"
+                },
+                "privateEmail": "user123@testdomain.by-works.com",
+                "organizations": [
+                    {
+                        "domainId": 11111111,
+                        "primary": true,
+                        "email": "user123@testdomain.by-works.com",
+                        "levelId": "",
+                        "orgUnits": [{
+                            "orgUnitId": "",
+                            "primary": true,
+                            "positionId": ""
+                        }]
+                    }
+                ]
+            }
+         */
+
+        /* DTO setting (DB에서 가져왔을 때 형태)*/
+        User user = new User();
+        user.setDomainId(11111111);
+        user.setEmail("user123@testdomain.by-works.com");
+        // user.setUserName(null);
+        user.setUserName(new User.UserName());
+        user.getUserName().setFirstName("u");
+        user.getUserName().setLastName("ser");
+        user.setPrivateEmail("user123@testdomain.by-works.com");
+
+        List<User.UserOrganization> organizations = new ArrayList<>();
+        User.UserOrganization organization = new User.UserOrganization();
+        organization.setDomainId(11111111);
+        organization.setPrimary(true);
+        organization.setEmail("user123@testdomain.by-works.com");
+        organization.setLevelId("");
+        List<User.UserOrganization.OrgUnit> orgUnits = new ArrayList<>();
+        User.UserOrganization.OrgUnit orgUnit = new User.UserOrganization.OrgUnit();
+        orgUnit.setOrgUnitId("");
+        orgUnit.setPrimary(true);
+        orgUnit.setPositionId("");
+        orgUnits.add(orgUnit);
+        organization.setOrgUnits(orgUnits);        
+        organizations.add(organization);
+        user.setOrganizations(organizations);
+
+        ObjectMapper objectMapper = new ObjectMapper();        
+        String jsonUser = objectMapper.writeValueAsString(user);
+        // JSONObject jsonBody = (JSONObject) parser.parse(jsonString); // 참고) string to json
+
+        /* DTO to JSONObjet test*/
+        /* 
+         * dto를 쓰지 않고 JsonObject를 쓰는 환경이 있어서 테스트 했으나
+         * POST할 때는 String으로 넘겨 줘야해서
+         * JsonObject로 변환하지 않고 바로 String으로 전송하면 된다.
+         * dto -> map -> jsonObject -> string
+         */
+        /*     
+            Map<String, Object> userMap = objectMapper.convertValue(user, Map.class);
+            JSONObject jsonBody = new JSONObject(userMap);
+            String jsonUser = jsonBody.toString();
+         */
+
+        String url = "https://www.worksapis.com/v1.0/users";
+        HttpClient httpClient = HttpClient.newHttpClient();
         
         String accessToken = authController.getAccessToken(session);
         if (accessToken == null) {
